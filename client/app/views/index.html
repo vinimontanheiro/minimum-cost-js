@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="pt" ng-app="grafos">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Algoritmo de Dijkstra</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="assets/bower_components/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="assets/bower_components/angular-material/angular-material.css" rel="stylesheet">
+    <link href="assets/css/styles.css" rel="stylesheet">
+    <link href="assets/bower_components/angularjs-toaster/toaster.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]-->
+    <script src="assets/js/ie-emulation.js"></script>
+    <script src="assets/js/html5shiv.min.js"></script>
+    <script src="assets/js/respond.min.js"></script>
+    <![endif]-->
+
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+
+<body ng-controller="MainController">
+
+    <nav class="navbar navbar-default navbar-fixed-top">
+        <div class="container">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="/" style="margin-top: 8px;">Fundamentos </a>
+
+            </div>
+            <div id="navbar" class="navbar-collapse collapse">
+                <form class="navbar-form navbar-left">
+                    <div class="form-group">
+                        <div class="input-group">
+                            <span class="input-group-addon">Informe a quantidade de nó </span>
+                            <input type="number" ng-disabled="entidade.mostrarFormAdd" ng-model="entidade.quantidadeDeNos" class="form-control" aria-label="Nós">
+                        </div>
+
+                    </div>
+                    <div class="form-group">
+                        <md-button ng-disabled="entidade.quantidadeDeNos <= 0 || entidade.mostrarFormAdd" class="md-raised md-primary" ng-click="entidade.fn.processarGrafo()">Gerar</md-button>
+                    </div>
+                </form>
+                <md-checkbox ng-disabled="entidade.mostrarFormAdd" ng-model="entidade.isCustoAletorio" class="md-fab md-primary pull-right" style="margin-right: 260px!important;margin-top: 19px;">
+                    Gerar Custos Aleatórios
+                </md-checkbox>
+            </div><!--/.navbar-collapse -->
+        </div>
+    </nav>
+    <md-button class="md-raised pull-right" target="blank" style="margin:111px 70px;" aria-label="Reload" href="https://bitbucket.org/viniciusmontanheiro/custominimo">
+        SOURCE
+        <i class="glyphicon glyphicon-download-alt"></i>
+    </md-button>
+
+    <md-button class="md-fab md-primary pull-right" style="margin:100px -50px;" aria-label="Reload" ng-click="entidade.fn.util.recarregarPagina()">
+        <i class="glyphicon glyphicon-refresh"></i>
+    </md-button>
+
+
+
+    </section>
+    <div class="container">
+        <div style="margin-top: 50px;">
+            <md-content class="md-padding ">
+                <toaster-container toaster-options="{'close-button': true}"></toaster-container>
+                <md-tabs md-dynamic-height md-border-bottom>
+                    <md-tab label="Grafo">
+                        <md-content class="md-padding md-fab md-primary">
+                            <div class="col-sm-3 col-md-2 sidebar">
+                                <div class="nav nav-sidebar">
+                                    <div class="input-group" ng-repeat="aresta in entidade.listaDeArestas" ng-show="!entidade.mostrarOrigemDestino && entidade.listaDeArestas.length > 0">
+                                        <span class="input-group-addon">{{aresta.source}} <i class="glyphicon glyphicon-arrow-left"></i> <i class="glyphicon glyphicon-arrow-right"></i> {{aresta.target + "  "}}</span>
+                                         <input ng-disabled="entidade.isCustoAletorio" style="width: 75px !important;" type="text" ng-model="entidade.listaDeArestas[$index].weight" class="form-control" ng-value="parseInt(aresta.weight)" aria-label="Custos">
+                                        </br>
+                                    </div>
+                                    <div class="form-group pull-right" style="width: 100% !important;" ng-show="!entidade.mostrarOrigemDestino && entidade.listaDeArestas.length > 0">
+                                        <md-button id="addCusto" class="md-raised md-primary" ng-click="entidade.fn.criarMatriz();entidade.fn.custoManual()">Confirmar Custos</md-button>
+                                    </div>
+
+                                    <md-content style="width: 330px;" layout-padding layout="row" layout-sm="column"
+                                                ng-show="entidade.mostrarOrigemDestino && entidade.listaDeArestas.length > 0">
+                                        <div class="panel panel-default" style="margin-right: 15px;" ng-hide="entidade.resultado.length > 0">
+
+                                            <div class="panel-heading">
+                                                <h3 class="panel-title">Encontrar caminho/custo mínimo :</h3>
+                                            </div>
+                                            <div class="panel-body">
+                                                <md-select ng-model="entidade.origem" placeholder="Origem">
+                                                    <md-option ng-repeat="vertice in entidade.listaDeCharCode" value="{{vertice}}">{{vertice}}</md-option>
+                                                </md-select>
+
+                                                <i class="glyphicon glyphicon-arrow-right"></i>
+
+                                                <md-select ng-model="entidade.destino" placeholder="Destino">
+                                                    <md-option ng-repeat="vertice in entidade.listaDeCharCode" value="{{vertice}}">{{vertice}}</md-option>
+                                                </md-select>
+
+                                                <md-button class="md-fab md-primary" ng-click="entidade.fn.buscarCaminho()"
+                                                           ng-disabled="!entidade.origem || !entidade.destino"
+                                                           ng-show="entidade.mostrarOrigemDestino && entidade.listaDeArestas.length > 0">
+                                                    <i class="glyphicon glyphicon-screenshot"></i>
+                                                </md-button>
+                                            </div>
+                                        </div>
+                                    </md-content>
+                                    <div class="form-group" ng-show="entidade.mostrarOrigemDestino && entidade.resultado.length > 0">
+                                        <md-button class="md-raised md-primary" ng-click="entidade.fn.limparResultado()">Consultar Novamente</md-button>
+                                    </div>
+                                </div>
+                            </div>
+                            <p>
+                                <div class="row">
+
+                                    <center><canvas id="quadro" width="700" height="700" ></canvas></center>
+                                </div>
+                            </p>
+                            <p>
+                                <h4 ng-show="entidade.mostrarOrigemDestino && entidade.resultado">Resultado: {{entidade.resultado}}</h4>
+                            </p>
+                        </md-content>
+                    </md-tab>
+                    <md-tab label="Matriz de Adjacência" ng-disabled="!entidade.mostrarMatriz && !entidade.mostrarOrigemDestino">
+                        <md-content class="md-padding">
+                            <p>
+                                <div id="matriz-container">
+                                    <svg style="width: auto !important;height: auto !important;min-width: 900px !important;min-height: 900px !important;border:1px lightgray solid;" />
+                                </div>
+                            </p>
+                        </md-content>
+                    </md-tab>
+                </md-tabs>
+            </md-content>
+        </div>
+    </div>
+
+    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+    <script src="../assets/js/ie-viewport.js"></script>
+
+    <!-- Bootstrap core JavaScript -->
+    <script src="assets/bower_components/jquery/dist/jquery.min.js"></script>
+    <script src="assets/js/d3.v3.min.js"></script>
+    <script src="assets/js/queue.v1.min.js"></script>
+    <script src="assets/bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+    <script src="assets/bower_components/angular/angular.min.js"></script>
+    <script src="assets/bower_components/angular-animate/angular-animate.min.js"></script>
+    <script src="assets/bower_components/angular-aria/angular-aria.min.js"></script>
+    <script src="assets/bower_components/angular-material/angular-material.js"></script>
+    <script src="assets/bower_components/angular-ui-router/release/angular-ui-router.min.js"></script>
+    <script src="assets/bower_components/angularjs-toaster/toaster.js"></script>
+    <script src="app/app.js"></script>
+    <script src="app/services/util.js"></script>
+    <script src="app/services/grafo.js"></script>
+    <script src="app/services/message.js"></script>
+    <script src="app/services/matrizAdjacencia.js"></script>
+    <script src="app/services/dijkstra.js"></script>
+    <script src="app/directives/form.js"></script>
+    <script src="app/controllers/main.js"></script>
+
+</body>
+</html>

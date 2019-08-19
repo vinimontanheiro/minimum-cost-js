@@ -1,0 +1,12 @@
+server/node_modules
+server/settings/notifications/logs
+server/settings/notifications/logs/access.log
+server/settings/notifications/logs/app.log
+server/settings/notifications/logs/errors.log
+client/.DS_Store
+server/.DS_Store
+client/.idea
+server/.idea
+tmp
+.DS_Store
+.idea
